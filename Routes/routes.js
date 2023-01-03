@@ -20,8 +20,11 @@ const makeFilePath = (type) => {
         case 'text':
             filePath = `${filePath}\\_TEXT`;
             break;
-        default:
+        case 'unsorted':
             filePath = `${filePath}\\_UNSORTED`;
+            break;
+        default:
+            filePath = `${filePath}`;
             break;
     }
 
@@ -36,14 +39,31 @@ router.get(
 
         filePath = `${filePath}\\${req.params.filename}`;
 
-        fs.readFile(filePath, (err, data) => {
+        /*fs.readFile(filePath, (err, data) => {
             if(err) {
                 resp.statusCode = 404;
-                resp.end(`No file named "${req.params.filename}"`);
+                resp.end(`${err.message}`);
             } else {
                 resp.end(data);
             }
-        })
+        })*/
+
+        let stat = fs.statSync(filePath);
+        resp.writeHeader(200, {"Content-Length": stat.size});
+
+        const  fReadStream = fs.createReadStream(filePath);
+
+        fReadStream.on('data', function (chunk) {
+            if(!resp.write(chunk)){
+                fReadStream.pause();
+            }
+        });
+        fReadStream.on('end', function () {
+            resp.end();
+        });
+        resp.on("drain", function () {
+            fReadStream.resume();
+        });
     }
 );
 
