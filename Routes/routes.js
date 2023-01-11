@@ -3,9 +3,12 @@ const router = new Router();
 const fs = require('fs');
 const config = require('config');
 const filesDir = config.get('FILES_DIR');
+const formidable = require('formidable');
 
 const makeFilePath = (type) => {
     let filePath = `${filesDir}`;
+
+    console.log(`Type is ${type}`);
 
     switch (type) {
         case 'image':
@@ -20,15 +23,23 @@ const makeFilePath = (type) => {
         case 'text':
             filePath = `${filePath}\\_TEXT`;
             break;
-        case 'unsorted':
-            filePath = `${filePath}\\_UNSORTED`;
+        case 'application':
+            filePath = `${filePath}\\_APPLICATION`;
             break;
         default:
-            filePath = `${filePath}`;
+            filePath = `${filePath}\\_UNSORTED`;
             break;
     }
 
     return filePath;
+}
+
+const parseFileType = (mimeType) => {
+    return mimeType.indexOf('/') > 0 ? mimeType.slice(0, mimeType.indexOf('/')) : mimeType;
+}
+
+const parseExtension = (fileName) => {
+    return fileName.slice(fileName.lastIndexOf('.'), fileName.length);
 }
 
 router.get(
@@ -38,15 +49,6 @@ router.get(
         let filePath = makeFilePath(req.params.type);
 
         filePath = `${filePath}\\${req.params.filename}`;
-
-        /*fs.readFile(filePath, (err, data) => {
-            if(err) {
-                resp.statusCode = 404;
-                resp.end(`${err.message}`);
-            } else {
-                resp.end(data);
-            }
-        })*/
 
         let stat = fs.statSync(filePath);
         resp.writeHeader(200, {"Content-Length": stat.size});
@@ -68,9 +70,26 @@ router.get(
 );
 
 router.post(
-    '/upload/:type',
-    async (req, resp) => {
-        let filePath = makeFilePath(req.params.type);
+    '/upload',
+    async (req, res) => {
+
+        const form = new formidable.IncomingForm();
+
+        form.parse(req, function(err, fields, files) {
+            if (err)
+                return res.status(400).json({ error: err.message });
+            const type = parseFileType(files.file.mimetype);
+
+            console.log(parseExtension(files.file.originalFilename));
+            let filename = `${files.file.newFilename}${parseExtension(files.file.originalFilename)}`;
+            fs.cp(files.file.filepath,  `${makeFilePath(type)}\\${filename}`, () => {
+                console.log(`Got new file ${filename} (${type})`);
+                res.json(
+                    {
+                        'URL':`${config.get('SERVER_URL')}:${config.get('PORT')}/${type}/${filename}`}
+                );
+            })
+        });
     }
 );
 
