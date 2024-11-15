@@ -1,5 +1,11 @@
 {
-  "SERVER_URL": "192.168.3.8",
+  "SERVER_URL": "localhost",
   "PORT": 3003,
-  "FILES_DIR": "D:\\\\_FILE_SERVER\\_FILES"
+  "FILES_DIR": "./_FILES",
+  "FILES_TYPES": ["_APPLICATION"
+                 , "_AUDIO"
+                 , "_IMAGE"
+                 , "_TEXT"
+                 , "_VIDEO"
+                 , "_UNSORTED"]
 }

@@ -1,94 +1,63 @@
 const Router = require('express');
 const router = new Router();
-const fs = require('fs');
-const config = require('config');
-const filesDir = config.get('FILES_DIR');
-const formidable = require('formidable');
+const multer = require('multer');
 
-const makeFilePath = (type) => {
-    let filePath = `${filesDir}`;
-
-    console.log(`Type is ${type}`);
-
-    switch (type) {
-        case 'image':
-            filePath = `${filePath}\\_IMAGE`;
-            break;
-        case 'audio':
-            filePath = `${filePath}\\_AUDIO`;
-            break;
-        case 'video':
-            filePath = `${filePath}\\_VIDEO`;
-            break;
-        case 'text':
-            filePath = `${filePath}\\_TEXT`;
-            break;
-        case 'application':
-            filePath = `${filePath}\\_APPLICATION`;
-            break;
-        default:
-            filePath = `${filePath}\\_UNSORTED`;
-            break;
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './_FILES/_UNSORTED');
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.fieldname + Date.now() + parseExtension(file.originalname))
     }
+})
 
-    return filePath;
-}
+const upload = multer({storage: storage});
 
-const parseFileType = (mimeType) => {
-    return mimeType.indexOf('/') > 0 ? mimeType.slice(0, mimeType.indexOf('/')) : mimeType;
-}
+const {getFile, sendFile, uploadFIle, deleteFile} = require("../Model/filemodel");
+const {parseExtension} = require("../Model/utils");
 
-const parseExtension = (fileName) => {
-    return fileName.slice(fileName.lastIndexOf('.'), fileName.length);
-}
+
+
+
 
 router.get(
     `/:type/:filename`,
-    async (req, resp) => {
+    async (req, res) => {
 
-        let filePath = makeFilePath(req.params.type);
+        const [fReadStream, stat] = getFile(req.params.type, req.params.filename);
 
-        filePath = `${filePath}\\${req.params.filename}`;
+        res.writeHeader(200, {"Content-Length": stat.size});
 
-        let stat = fs.statSync(filePath);
-        resp.writeHeader(200, {"Content-Length": stat.size});
-
-        const  fReadStream = fs.createReadStream(filePath);
-
-        fReadStream.on('data', function (chunk) {
-            if(!resp.write(chunk)){
-                fReadStream.pause();
-            }
-        });
-        fReadStream.on('end', function () {
-            resp.end();
-        });
-        resp.on("drain", function () {
-            fReadStream.resume();
-        });
+        sendFile(fReadStream, res);
     }
 );
 
 router.post(
     '/upload',
+    upload.single('file'),
     async (req, res) => {
+        try {
+            uploadFIle(req.file, response => {
+                if (response.err) {
+                    console.log('Ошибка при загрузке!');
+                    res.status(400).json(response.err);
+                } else
+                    res.json(response);
+            });
+        }
+        catch (e) {
+            res.status(400).json({err: e.message});
+        }
+    }
+);
 
-        const form = new formidable.IncomingForm();
+router.delete(
+    '/:type/:filename',
+    async (req, res) => {
+        console.log(`Delete file ${req.params.filename}(${req.params.type})`);
 
-        form.parse(req, function(err, fields, files) {
-            if (err)
-                return res.status(400).json({ error: err.message });
-            const type = parseFileType(files.file.mimetype);
-
-            console.log(parseExtension(files.file.originalFilename));
-            let filename = `${files.file.newFilename}${parseExtension(files.file.originalFilename)}`;
-            fs.cp(files.file.filepath,  `${makeFilePath(type)}\\${filename}`, () => {
-                console.log(`Got new file ${filename} (${type})`);
-                res.json(
-                    {
-                        'URL':`${config.get('SERVER_URL')}:${config.get('PORT')}/${type}/${filename}`}
-                );
-            })
+        deleteFile(req.params.type, req.params.filename, (result) => {
+            res.status(200).json(result);
         });
     }
 );

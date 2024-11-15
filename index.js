@@ -5,23 +5,28 @@ const app = express();
 const config = require('config');
 const PORT = config.get('PORT');
 const routes = require('./Routes/routes');
+const {initialCheck} = require("./Model/utils");
 
 app.use(express.json());
 app.use(cors());
 app.use(routes);
 
 
-const main = async () => {
+const main = async (cb) => {
     try {
-        app.listen(PORT, () => {
-            console.log(`Listening port ${PORT}`);
+        await initialCheck(() => {
+            app.listen(PORT, () => {
+                console.log(`Listening port ${PORT}`);
+            });
+            cb();
         });
+
     }
     catch (e) {
         console.error(e);
     }
 }
 
-main().then(() => {
+main(() => {
     console.log('thank you!');
 });
