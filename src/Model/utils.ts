@@ -1,9 +1,9 @@
 const config = require("config");
 const fs = require("fs");
 const filesDir = config.get('FILES_DIR');
-const filesTypes = config.get('FILES_TYPES');
-const makeFilePath = (type) => {
-    let filePath = `${filesDir}`;
+const fileTypes = config.get('FILES_TYPES');
+const makeFilePath = (type:string) => {
+    let filePath:string = `${filesDir}`;
 
     switch (type) {
         case 'image':
@@ -29,14 +29,14 @@ const makeFilePath = (type) => {
     return filePath;
 }
 
-const parseFileType = (mimeType) => {
+const parseFileType = (mimeType:string) => {
     return mimeType.indexOf('/') > 0 ? mimeType.slice(0, mimeType.indexOf('/')) : mimeType;
 }
-const parseExtension = (fileName) => {
+const parseExtension = (fileName:string) => {
     return fileName.slice(fileName.lastIndexOf('.'), fileName.length);
 }
 
-const initialCheck = (cb) => {
+const initialCheck = (cb:()=>void) => {
     console.log('Starting dirrectory check...');
 
     let cnt = 0;
@@ -49,7 +49,7 @@ const initialCheck = (cb) => {
             });
         }
 
-        filesTypes.forEach((ft) => {
+        fileTypes.forEach((ft) => {
             fs.access(`${filesDir}/${ft}`, err => {
                 if(err) {
                     cnt++;

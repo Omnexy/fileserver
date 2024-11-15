@@ -20,6 +20,7 @@
     "nodemon": "^2.0.20"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
     "ts-node-dev": "^2.0.0",
