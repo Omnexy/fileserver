@@ -1,7 +1,7 @@
 const config = require("config");
 const fs = require("fs");
 const filesDir = config.get('FILES_DIR');
-const filesTypes = config.get('FILES_TYPES');
+const fileTypes = config.get('FILES_TYPES');
 const makeFilePath = (type) => {
     let filePath = `${filesDir}`;
 
@@ -30,14 +30,21 @@ const makeFilePath = (type) => {
 }
 
 const parseFileType = (mimeType) => {
+    console.log(mimeType.indexOf('/') > 0 ? mimeType.slice(0, mimeType.indexOf('/')) : mimeType)
     return mimeType.indexOf('/') > 0 ? mimeType.slice(0, mimeType.indexOf('/')) : mimeType;
 }
 const parseExtension = (fileName) => {
     return fileName.slice(fileName.lastIndexOf('.'), fileName.length);
 }
+const parsePathWOExt = (filePath) => {
+    return filePath.slice(0, filePath.lastIndexOf('.'));
+}
+const parseNameFromPath = (filePath) => {
+    return filePath.slice(filePath.lastIndexOf('\\')+1, filePath.length);
+}
 
 const initialCheck = (cb) => {
-    console.log('Starting dirrectory check...');
+    console.log('Starting directory check...');
 
     let cnt = 0;
 
@@ -49,7 +56,7 @@ const initialCheck = (cb) => {
             });
         }
 
-        filesTypes.forEach((ft) => {
+        fileTypes.forEach((ft) => {
             fs.access(`${filesDir}/${ft}`, err => {
                 if(err) {
                     cnt++;
@@ -73,5 +80,7 @@ module.exports = {
     makeFilePath,
     parseExtension,
     parseFileType,
-    initialCheck
+    initialCheck,
+    parsePathWOExt,
+    parseNameFromPath
 }
